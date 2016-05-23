@@ -14,12 +14,17 @@ import {
 
 
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
+const mongDB_API_KEY = 'wA1TEG2k7D3gXqsJ8SmM-FHmWiOsjkwU';
 const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='
-
+var username = 'abc';
+var password = '123';
 class AwesomeProject extends Component {
   constructor(props) {
     super(props);
+
     this.state = {
+      userSignName: '',
+      userSignPass: '',
       etaObj: {},
       meetUpObj: {},
       userObj: {},
@@ -130,8 +135,22 @@ class AwesomeProject extends Component {
       </View>
     );
   }
-  showAlert() {
-    console.error('eyyyy');
+  signIn() {
+    var accObj = {
+      username: username,
+      password: password
+    };
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey=' + mongDB_API_KEY,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(accObj)
+    })
+    .then((response) => response.json())
+    .then((responseData) => console.warn(responseData));
   }
   renderSignInView() {
     var TouchableElement = TouchableHighlight;
@@ -141,9 +160,9 @@ class AwesomeProject extends Component {
         <Text style={[styles.signIn, styles.title]}>
         User Sign In
         </Text>
-        <TextInput style={[styles.searchInput, styles.Username]} placeholder='Username'/>
-        <TextInput style={[styles.searchInput, styles.Password]} placeholder='Password'/>
-        <TouchableHighlight onPress={this.showAlert}>
+        <TextInput ref="username" onChangeText={(name) => username = name} style={[styles.searchInput, styles.Username]} placeholder='Username'/>
+        <TextInput ref="password" onChangeText={(pass) => password = pass}style={[styles.searchInput, styles.Password]} placeholder='Password'/>
+        <TouchableHighlight onPress={this.signIn}>
         <Image style={styles.button} source={{uri: 'http://static1.squarespace.com/static/520b9d90e4b0db6a8088f152/t/5229f6e1e4b0fdd7a4e49392/1378481894683/Sign+In+Button.png'}}/>
         </TouchableHighlight>
       </View>
