@@ -19,9 +19,9 @@ const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units
 var username = 'abc';
 var password = '123';
 class AwesomeProject extends Component {
+
   constructor(props) {
     super(props);
-
     this.state = {
       userSignName: '',
       userSignPass: '',
@@ -136,25 +136,46 @@ class AwesomeProject extends Component {
     );
   }
   signIn() {
+    var app = this;
     var accObj = {
       username: username,
       password: password
     };
-    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey=' + mongDB_API_KEY,
-    {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(accObj)
-    })
+    var accFound = false;
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey='+ mongDB_API_KEY,)
     .then((response) => response.json())
-    .then((responseData) => console.warn(responseData));
+    .then((responseData) => {
+      for (var i = 0; i < responseData.length; i++) {
+        if (accObj.username === responseData[i].username && accObj.password === responseData[i].password) {
+          accFound = true;
+          app.setState({
+            signedIn: true
+          });
+          console.warn('Account Found.')
+          break;
+        }
+      }
+     })
+    .then(() => {
+      if (!accFound) {
+        fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey=' + mongDB_API_KEY,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(accObj)
+        })
+        .then((response) => app.setState({
+          signedIn: true
+        }))
+        .then(() => console.warn('Account not found. Creating new Account.'));            
+        }
+    })
+    .catch((e) => console.error(e));
   }
   renderSignInView() {
-    var TouchableElement = TouchableHighlight;
-
     return (
       <View>
         <Text style={[styles.signIn, styles.title]}>
@@ -162,7 +183,7 @@ class AwesomeProject extends Component {
         </Text>
         <TextInput ref="username" onChangeText={(name) => username = name} style={[styles.searchInput, styles.Username]} placeholder='Username'/>
         <TextInput ref="password" onChangeText={(pass) => password = pass}style={[styles.searchInput, styles.Password]} placeholder='Password'/>
-        <TouchableHighlight onPress={this.signIn}>
+        <TouchableHighlight onPress={this.signIn.bind(this)}>
         <Image style={styles.button} source={{uri: 'http://static1.squarespace.com/static/520b9d90e4b0db6a8088f152/t/5229f6e1e4b0fdd7a4e49392/1378481894683/Sign+In+Button.png'}}/>
         </TouchableHighlight>
       </View>
