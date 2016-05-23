@@ -7,8 +7,11 @@ import {
   ListView,
   StyleSheet,
   Text,
+  TextInput,
   View,
+  TouchableHighlight,
 } from 'react-native';
+
 
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
 const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='
@@ -21,6 +24,7 @@ class AwesomeProject extends Component {
       meetUpObj: {},
       userObj: {},
       loaded: false,
+      signedIn: false,
     };
   }
 
@@ -82,7 +86,7 @@ class AwesomeProject extends Component {
         this.setState({
           etaObj: {
             miles: responseData.rows[0].elements[0].distance.text,
-            time: responseData.rows[0].elements[0].distance.text,
+            time: responseData.rows[0].elements[0].duration.text,
             destination: responseData.destination_addresses[0]
           },
           loaded: true,
@@ -95,11 +99,23 @@ class AwesomeProject extends Component {
     if (!this.state.loaded) {
       return this.renderLoadingView();
     }
-    
+
+    if (!this.state.signedIn) {
+      return this.renderSignInView();
+    }
+
+    var eta = (this.state.etaObj);
     return (
       <View style={styles.container}>
-      <Text style={styles.title}>
-          {JSON.stringify(this.state.etaObj)}     
+      <Text style={styles.thumbnail}>
+          Destination: {eta.destination}   
+      </Text>
+
+      <Text style={styles.thumbnail}>
+          {eta.miles} away
+      </Text>
+      <Text style={styles.thumbnail}>
+          {eta.time} away
       </Text>
       </View>
     );
@@ -114,27 +130,24 @@ class AwesomeProject extends Component {
       </View>
     );
   }
+  showAlert() {
+    console.error('eyyyy');
+  }
+  renderSignInView() {
+    var TouchableElement = TouchableHighlight;
 
-  renderMovie(movie) {
     return (
-      <View style={styles.container}>
-      <Text>
-        {movie}
-      </Text>
+      <View>
+        <Text style={[styles.signIn, styles.title]}>
+        User Sign In
+        </Text>
+        <TextInput style={[styles.searchInput, styles.Username]} placeholder='Username'/>
+        <TextInput style={[styles.searchInput, styles.Password]} placeholder='Password'/>
+        <TouchableHighlight onPress={this.showAlert}>
+        <Image style={styles.button} source={{uri: 'http://static1.squarespace.com/static/520b9d90e4b0db6a8088f152/t/5229f6e1e4b0fdd7a4e49392/1378481894683/Sign+In+Button.png'}}/>
+        </TouchableHighlight>
       </View>
     );
-  //   return (
-      // <View style={styles.container}>
-      //   // <Image
-      //   //   source={{uri: movie.posters.thumbnail}}
-      //   //   style={styles.thumbnail}
-      //   // />
-      //   // <View style={styles.rightContainer}>
-      //   // <Text style={styles.title}>abc</Text>
-      //     // <Text style={styles.year}>{movie.year}</Text>
-      //   // </View>
-      // </View>
-  //   );
   }
 }
 
@@ -151,19 +164,46 @@ var styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
+    marginTop: 100,
     marginBottom: 8,
+    alignItems: 'center',
     textAlign: 'center',
   },
   year: {
     textAlign: 'center',
   },
   thumbnail: {
-    width: 53,
+    width: 110,
     height: 81,
   },
   listView: {
     paddingTop: 20,
     backgroundColor: '#F5FCFF',
   },
+  searchInput: {
+    marginTop: 100,
+    height: 36,
+    padding: 4,
+    marginRight: 80,
+    marginLeft: 80,
+    flex: 2,
+    fontSize: 18,
+    borderWidth: 1,
+    borderColor: '#48BBEC',
+    borderRadius: 8,
+    color: '#48BBEC'
+  },
+  signIn: {
+    marginTop: 300,
+  },
+  button: {
+    width: 200,
+    height: 50,
+    marginLeft: 90,
+    marginTop: 30,
+  },
+  Password: {
+    marginTop: 20,
+  }
 });
 AppRegistry.registerComponent('AwesomeProject', () => AwesomeProject);
