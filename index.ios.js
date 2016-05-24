@@ -48,6 +48,7 @@ class AwesomeProject extends Component {
     this.getGeoLocation();
   }
 
+// google map functions
   getGeoLocation() {
     fetch('http://freegeoip.net/json/')
       .then((response) => response.json())
@@ -105,71 +106,29 @@ class AwesomeProject extends Component {
       .done();
   }
 
-  signIn() {
-    var app = this;
-    var accObj = {
-      username: username,
-      password: password
-    };
-    var accFound = false;
-    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey='+ mongDB_API_KEY,)
-    .then((response) => response.json())
-    .then((responseData) => {
-      for (var i = 0; i < responseData.length; i++) {
-        if (accObj.username === responseData[i].username && accObj.password === responseData[i].password) {
-          accFound = true;
-          app.setState({
-            signedIn: true
+  // flag functions
+  viewMyGroupsFlag() {
+    groupViewData = [];
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY)
+      .then((response) => response.json())
+        .then((responseData) => {
+          responseData.forEach((group) => {
+            var groupObj = {
+              groupName: group.groupName,
+              destination: group.destination,
+              groupMembers: group.groupMembers
+            };
+              groupViewData.push(groupObj);
           });
-          console.warn('Account Found.')
-          break;
-        }
-      }
-     })
-    .then(() => {
-      if (!accFound) {
-        fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey=' + mongDB_API_KEY,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(accObj)
-        })
-        .then((response) => app.setState({
-          signedIn: true
-        }))
-        .then(() => console.warn('Account not found. Creating new Account.'));            
-        }
-    })
-    .catch((e) => console.error(e));
+      })
+        .then(() => this.setState({
+          myGroupsScreen: true
+        }));
   }
 
   createGroupFlag() {
     this.setState({
       groupCreateScreen: true
-    });
-  }
-
-  createGroup() {
-    var groupObj = {
-      groupName: groupNameTemp,
-      creator: username,
-      destination: destinationTemp,
-      groupMembers: []
-    }
-    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY,
-      {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(groupObj)
-      }).then(() => console.warn('Group Created'));
-    this.setState({
-      groupCreateScreen: false
     });
   }
 
@@ -190,6 +149,28 @@ class AwesomeProject extends Component {
         .then(() => this.setState({
           groupViewScreen: true
         }));
+  }
+
+  // driver functions
+  createGroup() {
+    var groupObj = {
+      groupName: groupNameTemp,
+      creator: username,
+      destination: destinationTemp,
+      groupMembers: [username]
+    }
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(groupObj)
+      }).then(() => console.warn('Group Created'));
+    this.setState({
+      groupCreateScreen: false
+    });
   }
 
   joinGroup(x) {
@@ -236,6 +217,54 @@ class AwesomeProject extends Component {
         });
   }
 
+  signIn() {
+    var app = this;
+    var accObj = {
+      username: username,
+      password: password
+    };
+    var accFound = false;
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey='+ mongDB_API_KEY,)
+    .then((response) => response.json())
+    .then((responseData) => {
+      for (var i = 0; i < responseData.length; i++) {
+        if (accObj.username === responseData[i].username && accObj.password === responseData[i].password) {
+          accFound = true;
+          app.setState({
+            signedIn: true
+          });
+          console.warn('Account Found.')
+          break;
+        }
+      }
+     })
+    .then(() => {
+      if (!accFound) {
+        fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey=' + mongDB_API_KEY,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(accObj)
+        })
+        .then((response) => app.setState({
+          signedIn: true
+        }))
+        .then(() => console.warn('Account not found. Creating new Account.'));            
+        }
+    })
+    .catch((e) => console.error(e));
+  }
+
+
+// WORK here next!!!!!!
+  viewGroup(){
+
+  }
+
+  // render functions
   renderGroupsView() {
     groupList = [];
     for (var i = 0; i < groupViewData.length; i++) {
@@ -246,6 +275,27 @@ class AwesomeProject extends Component {
     <View style = {styles.title}>
           {groupList.map( (r) => {
             return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
+            <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
+            </TouchableHighlight>
+          })}
+    </View>
+    );
+  }
+
+  renderMyGroupScreen() {
+    groupList = [];
+    for (var i = 0; i < groupViewData.length; i++) {
+      if (groupViewData[i].groupMembers.indexOf(username) !== -1){
+        var t = groupViewData[i].groupName + '\n Destination: ' + groupViewData[i].destination + '\n';
+        groupList.push([t,i]);
+      }
+
+    }
+    return (
+    <View style = {styles.title}>
+      <Text>Your Groups</Text>
+          {groupList.map( (r) => {
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.viewGroup(r[1])}> 
             <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
             </TouchableHighlight>
           })}
@@ -274,7 +324,7 @@ class AwesomeProject extends Component {
         <TouchableHighlight onPress={this.viewGroupsFlag.bind(this)}> 
         <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Search+for+a+Group&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
-        <TouchableHighlight onPress={this.viewGroupsFlag.bind(this)}> 
+        <TouchableHighlight onPress={this.viewMyGroupsFlag.bind(this)}> 
         <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=View+My+Groups&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
       </View>
@@ -321,6 +371,10 @@ class AwesomeProject extends Component {
 
     if (this.state.groupCreateScreen) {
       return this.renderGroupCreateScreen();
+    }
+
+    if (this.state.myGroupsScreen) {
+      return this.renderMyGroupScreen();
     }
 
     if (!this.state.groupSelected) {
