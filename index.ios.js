@@ -33,7 +33,8 @@ class AwesomeProject extends Component {
       signedIn: false,
       groupSelected: false,
       groupCreateScreen: false,
-      groupViewScreen: false
+      groupViewScreen: false,
+      myGroupsScreen: false
     };
   }
 
@@ -191,23 +192,6 @@ class AwesomeProject extends Component {
         }));
   }
 
-   renderGroupsView() {
-    groupList = [];
-    for (var i = 0; i < groupViewData.length; i++) {
-      var t = groupViewData[i].groupName + '\n Destination: ' + groupViewData[i].destination + '\n';
-      groupList.push([t,i]);
-    }
-    return (
-    <View style = {styles.title}>
-          {groupList.map( (r) => {
-            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
-            <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
-            </TouchableHighlight>
-          })}
-    </View>
-    );
-  }
-
   joinGroup(x) {
     // get all the groups
     fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY)
@@ -252,6 +236,23 @@ class AwesomeProject extends Component {
         });
   }
 
+  renderGroupsView() {
+    groupList = [];
+    for (var i = 0; i < groupViewData.length; i++) {
+      var t = groupViewData[i].groupName + '\n Destination: ' + groupViewData[i].destination + '\n';
+      groupList.push([t,i]);
+    }
+    return (
+    <View style = {styles.title}>
+          {groupList.map( (r) => {
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
+            <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
+            </TouchableHighlight>
+          })}
+    </View>
+    );
+  }
+
   renderGroupCreateScreen() {
     return(
       <View>
@@ -268,10 +269,13 @@ class AwesomeProject extends Component {
     return(
       <View>
         <TouchableHighlight onPress={this.createGroupFlag.bind(this)}> 
-        <Image style={[styles.button, {marginLeft:40, width: 300, marginTop: 200}]} source={{uri: 'http://dabuttonfactory.com/button.jpg?t=Create+a+Group&f=Caviar-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=33&vp=20&c=27&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=0&bc=569&shs=1&shc=444&sho=s'}}/>
+        <Image style={[styles.button, {marginLeft:40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Create+a+Group&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
         <TouchableHighlight onPress={this.viewGroupsFlag.bind(this)}> 
-        <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 200}]} source={{uri: 'http://dabuttonfactory.com/button.jpg?t=Search+for+a+Group&f=Caviar-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=33&vp=20&c=27&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=0&bc=569&shs=1&shc=444&sho=s'}}/>
+        <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Search+for+a+Group&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
+        </TouchableHighlight>
+        <TouchableHighlight onPress={this.viewGroupsFlag.bind(this)}> 
+        <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=View+My+Groups&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
       </View>
     );
