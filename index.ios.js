@@ -12,6 +12,7 @@ import {
   TouchableHighlight,
 } from 'react-native';
 
+console.disableYellowBox = true;
 
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
 const mongDB_API_KEY = 'wA1TEG2k7D3gXqsJ8SmM-FHmWiOsjkwU';
@@ -19,6 +20,7 @@ const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units
 var username, password, groupNameTemp, destinationTemp, groupViewData, groupList, userGPS; 
 username = 'default';
 var watchID = (null: ?number);
+
 class AwesomeProject extends Component {
 
   constructor(props) {
@@ -39,14 +41,23 @@ class AwesomeProject extends Component {
   }
 
   componentDidMount() {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userGPS = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude        
+        };
+      this.reverseGeoCoding();
+      this.setDestination('danville,ca'); //need user input
+      this.fetchData();
+      });
     watchID = navigator.geolocation.watchPosition((position) => {
       userGPS = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude        
         };
     });
-    this.setDestination('danville,ca'); //need user input
-    this.fetchData();
+
   }
 
   componentLoop(){
@@ -109,6 +120,16 @@ class AwesomeProject extends Component {
         });
       })
       .done();
+  }
+
+  reverseGeoCoding() {
+    fetch('https://maps.googleapis.com/maps/api/geocode/json?latlng=' + userGPS.latitude + ',' + userGPS.longitude + '&key=' + GOOGLEMAP_API_KEY)
+    .then((response) => response.json())
+    .then((responseData) => {
+      userGPS.neighborhood = responseData.results[0].address_components[2].long_name;
+      var address = responseData.results[0].address_components[0].short_name + " " + responseData.results[0].address_components[1].short_name + ", " + responseData.results[0].address_components[3].short_name;
+      userGPS.address = address;  
+    });
   }
 
   // flag functions
@@ -284,7 +305,7 @@ class AwesomeProject extends Component {
     <View style = {styles.title}>
           {groupList.map( (r) => {
             return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
-            <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
+            <Text style= {{marginTop: 5, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
             </TouchableHighlight>
           })}
     </View>
@@ -302,6 +323,11 @@ class AwesomeProject extends Component {
     }
     return (
     <View style = {styles.title}>
+        <View style={styles.gpsContainer}>
+        <Text style={styles.gpsInfo}> ({userGPS.latitude}, {userGPS.longitude})</Text>
+        <Text style={styles.gpsInfo}> Neighborhood: {userGPS.neighborhood} </Text>
+        <Text style={styles.gpsInfo}> Approx Address: {userGPS.address} </Text>
+        </View>
       <Text>Your Groups</Text>
           {groupList.map( (r) => {
             return <TouchableHighlight style={styles.buttonBox} onPress={() => this.viewGroup(r[1])}> 
@@ -315,6 +341,11 @@ class AwesomeProject extends Component {
   renderGroupCreateScreen() {
     return(
       <View>
+        <View style={styles.gpsContainer}>
+        <Text style={styles.gpsInfo}> ({userGPS.latitude}, {userGPS.longitude})</Text>
+        <Text style={styles.gpsInfo}> Neighborhood: {userGPS.neighborhood} </Text>
+        <Text style={styles.gpsInfo}> Approx Address: {userGPS.address} </Text>
+        </View>
         <TextInput ref="groupName" onChangeText={(name) => groupNameTemp = name} style={[styles.searchInput, styles.Username]} placeholder='Group Name'/>
         <TextInput ref="groupDestination" onChangeText={(name) => destinationTemp = name} style={[styles.searchInput, styles.Username, {marginTop: 20}]} placeholder='Destination'/>
         <TouchableHighlight onPress={this.createGroup.bind(this)}> 
@@ -327,6 +358,11 @@ class AwesomeProject extends Component {
   renderGroupSelect() {
     return(
       <View>
+        <View style={styles.gpsContainer}>
+        <Text style={styles.gpsInfo}> ({userGPS.latitude}, {userGPS.longitude})</Text>
+        <Text style={styles.gpsInfo}> Neighborhood: {userGPS.neighborhood} </Text>
+        <Text style={styles.gpsInfo}> Approx Address: {userGPS.address} </Text>
+        </View>
         <TouchableHighlight onPress={this.createGroupFlag.bind(this)}> 
         <Image style={[styles.button, {marginLeft:40, width: 300, marginTop: 100}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Create+a+Group&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=31&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
@@ -343,9 +379,15 @@ class AwesomeProject extends Component {
   renderSignInView() {
     return (
       <View>
+        <View style={styles.gpsContainer}>
+        <Text style={styles.gpsInfo}> ({userGPS.latitude}, {userGPS.longitude})</Text>
+        <Text style={styles.gpsInfo}> Neighborhood: {userGPS.neighborhood} </Text>
+        <Text style={styles.gpsInfo}> Approx Address: {userGPS.address} </Text>
+        </View>
         <Text style={[styles.signIn, styles.title]}>
         User Sign In
         </Text>
+
         <TextInput ref="username" onChangeText={(name) => username = name} style={[styles.searchInput, styles.Username]} placeholder='Username'/>
         <TextInput ref="password" onChangeText={(pass) => password = pass}style={[styles.searchInput, styles.Password]} placeholder='Password'/>
         <TouchableHighlight onPress={this.signIn.bind(this)}>
@@ -359,7 +401,7 @@ class AwesomeProject extends Component {
     return (
       <View style={styles.container}>
         <Text>
-          Loading movies...
+          Loading Global Position Data
         </Text>
       </View>
     );
@@ -418,6 +460,13 @@ var styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
   },
+  gpsContainer: {
+    flex: 1,
+    marginTop: 20,
+  },
+  gpsInfo: {
+    flexDirection: 'row',
+  },
   rightContainer: {
     flex: 1,
   },
@@ -453,7 +502,7 @@ var styles = StyleSheet.create({
     color: '#48BBEC'
   },
   signIn: {
-    marginTop: 300,
+    marginTop: 200,
   },
   button: {
     width: 200,
@@ -465,9 +514,10 @@ var styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonBox: {
+    width: 200,
     marginTop: 10,
-    marginBottom: 20,
-    height: 60,
+    marginBottom: 10,
+    height: 50,
     borderBottomWidth: 2,
     borderLeftWidth: 2,
     borderTopWidth: 2,
