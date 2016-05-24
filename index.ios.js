@@ -16,8 +16,9 @@ import {
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
 const mongDB_API_KEY = 'wA1TEG2k7D3gXqsJ8SmM-FHmWiOsjkwU';
 const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='
-var username, password, groupNameTemp, destinationTemp; 
+var username, password, groupNameTemp, destinationTemp, groupViewData; 
 username = 'default';
+
 class AwesomeProject extends Component {
 
   constructor(props) {
@@ -31,7 +32,8 @@ class AwesomeProject extends Component {
       loaded: false,
       signedIn: false,
       groupSelected: false,
-      groupCreateScreen: false
+      groupCreateScreen: false,
+      groupViewScreen: false
     };
   }
 
@@ -170,13 +172,35 @@ class AwesomeProject extends Component {
     });
   }
 
-  viewGroups() {
+  viewGroupsFlag() {
+    groupViewData = [];
     fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY)
-    .then((response) => response.json())
-    .then((responseData) => {
-      console.error(responseData);
- 
-    });
+      .then((response) => response.json())
+        .then((responseData) => {
+          responseData.forEach((group) => {
+            var groupObj = {
+              groupName: group.groupName,
+              destination: group.destination,
+              groupMembers: group.groupMembers
+            };
+              groupViewData.push(groupObj);
+          });
+      })
+        .then(() => this.setState({
+          groupViewScreen: true
+        }));
+  }
+
+  renderGroupsView() {
+    return (
+      <View>
+      {groupViewData.map((meetup) => {return 
+        <TouchableHighlight>
+        <Text style={styles.title}> {JSON.stringify(meetup)}</Text>
+        </TouchableHighlight>;
+      })}
+      </View>
+    );
   }
 
   renderGroupCreateScreen() {
@@ -197,7 +221,7 @@ class AwesomeProject extends Component {
         <TouchableHighlight onPress={this.createGroupFlag.bind(this)}> 
         <Image style={[styles.button, {marginLeft:40, width: 300, marginTop: 200}]} source={{uri: 'http://dabuttonfactory.com/button.jpg?t=Create+a+Group&f=Caviar-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=33&vp=20&c=27&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=0&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
-        <TouchableHighlight onPress={this.viewGroups.bind(this)}> 
+        <TouchableHighlight onPress={this.viewGroupsFlag.bind(this)}> 
         <Image style={[styles.button, {marginLeft: 40, width: 300, marginTop: 200}]} source={{uri: 'http://dabuttonfactory.com/button.jpg?t=Search+for+a+Group&f=Caviar-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=33&vp=20&c=27&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=0&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
       </View>
@@ -238,6 +262,10 @@ class AwesomeProject extends Component {
       return this.renderSignInView();
     }
 
+    if (this.state.groupViewScreen) {
+      return this.renderGroupsView();
+    }
+
     if (this.state.groupCreateScreen) {
       return this.renderGroupCreateScreen();
     }
@@ -245,6 +273,8 @@ class AwesomeProject extends Component {
     if (!this.state.groupSelected) {
       return this.renderGroupSelect();
     }
+
+
 
 
     if (etaSelected) {
