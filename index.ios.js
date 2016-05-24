@@ -16,9 +16,9 @@ import {
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
 const mongDB_API_KEY = 'wA1TEG2k7D3gXqsJ8SmM-FHmWiOsjkwU';
 const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='
-var username, password, groupNameTemp, destinationTemp, groupViewData, groupList; 
+var username, password, groupNameTemp, destinationTemp, groupViewData, groupList, userGPS; 
 username = 'default';
-
+var watchID = (null: ?number);
 class AwesomeProject extends Component {
 
   constructor(props) {
@@ -39,7 +39,12 @@ class AwesomeProject extends Component {
   }
 
   componentDidMount() {
-    this.getGeoLocation();
+    watchID = navigator.geolocation.watchPosition((position) => {
+      userGPS = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude        
+        };
+    });
     this.setDestination('danville,ca'); //need user input
     this.fetchData();
   }
@@ -221,7 +226,9 @@ class AwesomeProject extends Component {
     var app = this;
     var accObj = {
       username: username,
-      password: password
+      password: password,
+      latitude: userGPS.latitude,
+      longitude: userGPS.longitude
     };
     var accFound = false;
     fetch('https://api.mlab.com/api/1/databases/meetup/collections/Accounts?apiKey='+ mongDB_API_KEY,)
@@ -233,6 +240,7 @@ class AwesomeProject extends Component {
           app.setState({
             signedIn: true
           });
+          userDB_ID = responseData[i]._id.$oid;
           console.warn('Account Found.')
           break;
         }
@@ -249,19 +257,20 @@ class AwesomeProject extends Component {
           },
           body: JSON.stringify(accObj)
         })
-        .then((response) => app.setState({
+        .then((response) => {
+          app.setState({
           signedIn: true
-        }))
+        });
+          userDB_ID = JSON.parse(response._bodyInit)._id.$oid;
+        })
         .then(() => console.warn('Account not found. Creating new Account.'));            
         }
     })
     .catch((e) => console.error(e));
   }
 
-
 // WORK here next!!!!!!
   viewGroup(){
-
   }
 
   // render functions
