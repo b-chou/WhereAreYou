@@ -16,7 +16,7 @@ import {
 const GOOGLEMAP_API_KEY = 'AIzaSyBOT8ZSLWLrh8aV-HJgkR20Lcc_tuTyyx0';
 const mongDB_API_KEY = 'wA1TEG2k7D3gXqsJ8SmM-FHmWiOsjkwU';
 const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='
-var username, password, groupNameTemp, destinationTemp, groupViewData; 
+var username, password, groupNameTemp, destinationTemp, groupViewData, groupList; 
 username = 'default';
 
 class AwesomeProject extends Component {
@@ -156,7 +156,7 @@ class AwesomeProject extends Component {
       groupName: groupNameTemp,
       creator: username,
       destination: destinationTemp,
-      gropuMembers: []
+      groupMembers: []
     }
     fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY,
       {
@@ -191,16 +191,65 @@ class AwesomeProject extends Component {
         }));
   }
 
-  renderGroupsView() {
+   renderGroupsView() {
+    groupList = [];
+    for (var i = 0; i < groupViewData.length; i++) {
+      var t = groupViewData[i].groupName + '\n Destination: ' + groupViewData[i].destination + '\n';
+      groupList.push([t,i]);
+    }
     return (
-      <View>
-      {groupViewData.map((meetup) => {return 
-        <TouchableHighlight>
-        <Text style={styles.title}> {JSON.stringify(meetup)}</Text>
-        </TouchableHighlight>;
-      })}
-      </View>
+    <View style = {styles.title}>
+          {groupList.map( (r) => {
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
+            <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
+            </TouchableHighlight>
+          })}
+    </View>
     );
+  }
+
+  joinGroup(x) {
+    // get all the groups
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY)
+        .then((response) => response.json())
+          .then((responseData) => {
+              var id = responseData[x]._id.$oid;
+              // get the id of the individual group we want to join
+              fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups/' + id + '?apiKey=' + mongDB_API_KEY)
+              .then((response) => response.json())
+              .then((responseData) => {
+                var tempStorage = responseData.groupMembers;
+                tempStorage.push(username);
+                var obj = {
+                  groupName: responseData.groupName,
+                  creator: responseData.creator,
+                  destination: responseData.destination,
+                  groupMembers: tempStorage
+                };
+                // add self to database as a group member
+                fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(obj)
+                });
+                // delete old version of group
+                fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups/' + id + '?apiKey=' + mongDB_API_KEY,
+                {
+                  method: 'DELETE'
+                }
+                );
+              });
+          })
+          .then(() => {
+            console.warn('Joined new group.');
+            this.setState({
+              groupViewScreen: false
+            });
+        });
   }
 
   renderGroupCreateScreen() {
@@ -273,9 +322,6 @@ class AwesomeProject extends Component {
     if (!this.state.groupSelected) {
       return this.renderGroupSelect();
     }
-
-
-
 
     if (etaSelected) {
       var eta = (this.state.etaObj);
@@ -350,6 +396,16 @@ var styles = StyleSheet.create({
   },
   Password: {
     marginTop: 20,
+  },
+  buttonBox: {
+    marginTop: 10,
+    marginBottom: 20,
+    height: 60,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderBottomColor: 'black',
   }
 });
 AppRegistry.registerComponent('AwesomeProject', () => AwesomeProject);
