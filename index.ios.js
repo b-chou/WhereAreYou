@@ -31,12 +31,14 @@ class AwesomeProject extends Component {
       etaObj: {},
       meetUpObj: {},
       userObj: {},
+      currentGroup: {},
       loaded: false,
       signedIn: false,
       groupSelected: false,
       groupCreateScreen: false,
       groupViewScreen: false,
-      myGroupsScreen: false
+      myGroupsScreen: false,
+      individualGroupScreen: false,
     };
   }
 
@@ -140,6 +142,7 @@ class AwesomeProject extends Component {
         .then((responseData) => {
           responseData.forEach((group) => {
             var groupObj = {
+              dbID: group._id.$oid,
               groupName: group.groupName,
               destination: group.destination,
               groupMembers: group.groupMembers
@@ -291,7 +294,16 @@ class AwesomeProject extends Component {
   }
 
 // WORK here next!!!!!!
-  viewGroup(){
+  viewGroup(groupID){
+    fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups/' + groupID + '?apiKey=' + mongDB_API_KEY)
+              .then((response) => response.json())
+              .then((responseData) => {
+                this.setState({
+                  currentGroup: responseData,
+                  individualGroupScreen: true,
+                  myGroupsScreen: false
+                });
+              });
   }
 
   // render functions
@@ -304,7 +316,7 @@ class AwesomeProject extends Component {
     return (
     <View style = {styles.title}>
           {groupList.map( (r) => {
-            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1]).bind(this)}> 
             <Text style= {{marginTop: 5, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
             </TouchableHighlight>
           })}
@@ -316,21 +328,16 @@ class AwesomeProject extends Component {
     groupList = [];
     for (var i = 0; i < groupViewData.length; i++) {
       if (groupViewData[i].groupMembers.indexOf(username) !== -1){
-        var t = groupViewData[i].groupName + '\n Destination: ' + groupViewData[i].destination + '\n';
-        groupList.push([t,i]);
+        var t = groupViewData[i].groupName + '\nDestination: ' + groupViewData[i].destination + '\n';
+        var dbID = groupViewData[i].dbID;
+        groupList.push([t,i, dbID]);
       }
-
     }
     return (
     <View style = {styles.title}>
-        <View style={styles.gpsContainer}>
-        <Text style={styles.gpsInfo}> ({userGPS.latitude}, {userGPS.longitude})</Text>
-        <Text style={styles.gpsInfo}> Neighborhood: {userGPS.neighborhood} </Text>
-        <Text style={styles.gpsInfo}> Approx Address: {userGPS.address} </Text>
-        </View>
       <Text>Your Groups</Text>
           {groupList.map( (r) => {
-            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.viewGroup(r[1])}> 
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.viewGroup(r[2])}> 
             <Text style= {{marginTop: 10, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
             </TouchableHighlight>
           })}
@@ -407,6 +414,19 @@ class AwesomeProject extends Component {
     );
   }
 
+  renderIndividualGroupScreen() {
+    //console.error(this.state.currentGroup);
+    return (
+      <View>
+        <Text style={styles.title}> {this.state.currentGroup.groupName} </Text>
+        <Text style={[styles.title, {marginTop: 30, marginBottom: 100}]}> Destination: {this.state.currentGroup.destination} </Text>
+        {this.state.currentGroup.groupMembers.map((member) => {
+          return <Text style={{marginLeft: 50, marginBottom: 20, fontSize: 16}}>{member}</Text>
+        })}
+      </View>
+    );
+  }
+
   render() {
     if (!this.state.loaded) {
       return this.renderLoadingView();
@@ -428,9 +448,14 @@ class AwesomeProject extends Component {
       return this.renderMyGroupScreen();
     }
 
+    if (this.state.individualGroupScreen) {
+      return this.renderIndividualGroupScreen();
+    }
+
     if (!this.state.groupSelected) {
       return this.renderGroupSelect();
     }
+
 
     if (etaSelected) {
       var eta = (this.state.etaObj);
@@ -476,6 +501,7 @@ var styles = StyleSheet.create({
     marginBottom: 8,
     alignItems: 'center',
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   year: {
     textAlign: 'center',
