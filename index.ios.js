@@ -20,7 +20,7 @@ const baseLink = 'https://maps.googleapis.com/maps/api/distancematrix/json?units
 var username, password, groupNameTemp, destinationTemp, groupViewData, groupList, userGPS; 
 username = 'default';
 var watchID = (null: ?number);
-
+var groupDistanceData = [];
 class AwesomeProject extends Component {
 
   constructor(props) {
@@ -32,7 +32,8 @@ class AwesomeProject extends Component {
       meetUpObj: {},
       userObj: {},
       currentGroup: {},
-      groupData: {},
+      groupData: [],
+      groupDistanceData: [],
       groupMemberDistanceFinalData: {},
       focalDestination: '',
       loaded: false,
@@ -112,18 +113,20 @@ class AwesomeProject extends Component {
     })
   }
 
-  fetchData(originLat, originLong, endpoint) {
-    console.error(originLat, originLong, endpoint);
-    fetch(baseLink + '&origins=' + originLat + ',' + originLong + '&destinations=' + endpoint + '&key=' + GOOGLEMAP_API_KEY)
+  fetchData(originLat, originLong, endpoint, username) {
+    fetch(baseLink + originLat + ',' + originLong + '&destinations=' + endpoint + '&key=' + GOOGLEMAP_API_KEY)
       .then((response) => response.json())
       .then((responseData) => {
+        var obj = {
+          miles: responseData.rows[0].elements[0].distance.text,
+          time: responseData.rows[0].elements[0].duration.text,
+          username: username
+        };
+        var temp = this.state.groupDistanceData;
+        temp.push(obj);
+
         this.setState({
-          etaObj: {
-            miles: responseData.rows[0].elements[0].distance.text,
-            time: responseData.rows[0].elements[0].duration.text,
-            destination: responseData.destination_addresses[0]
-          },
-          loaded: true,
+          groupDistanceData: temp
         });
       })
       .done();
@@ -167,6 +170,9 @@ class AwesomeProject extends Component {
   }
 
   viewGroupsFlag() {
+    this.setState({
+      groupDistanceData: []
+    });
     groupViewData = [];
     fetch('https://api.mlab.com/api/1/databases/meetup/collections/Groups?apiKey=' + mongDB_API_KEY)
       .then((response) => response.json())
@@ -298,7 +304,6 @@ class AwesomeProject extends Component {
     .catch((e) => console.error(e));
   }
 
-// WORK here next!!!!!!
   viewGroup(groupID, groupDestination){
     this.setState({
       focalDestination: groupDestination
@@ -328,19 +333,20 @@ class AwesomeProject extends Component {
                     }
                   });
                 })
-                .then(() => {
-                  this.setState({
-                    groupMemberDistanceFinalData: {}
-                  });
-                  for (var i = 0; i < this.state.groupData.length; i++) {
-                    this.fetchData(this.state.groupData[i].latitude, this.state.groupData[i].longitude, this.state.focalDestination);
-                  }
-                })
                 .then(() => this.setState({
-                  individualGroupScreen: true,
-                  myGroupsScreen: false
-                })
-              );
+                    groupDistanceData: []
+                  }))
+                .then(() => {
+                  for (var i = 0; i < this.state.groupData.length; i++) {
+                      this.fetchData(this.state.groupData[i].latitude, this.state.groupData[i].longitude, this.state.focalDestination, this.state.groupData[i].username);
+                    }
+                  setTimeout(() => this.setState({
+                    individualGroupScreen: true,
+                    myGroupsScreen: false
+                  }), 1000);
+                }
+                );
+                
               });
   }
 
@@ -354,7 +360,7 @@ class AwesomeProject extends Component {
     return (
     <View style = {styles.title}>
           {groupList.map( (r) => {
-            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1]).bind(this)}> 
+            return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
             <Text style= {{marginTop: 5, marginLeft: 10, marginRight: 10}}>{r[0]} </Text>
             </TouchableHighlight>
           })}
@@ -453,13 +459,12 @@ class AwesomeProject extends Component {
   }
 
   renderIndividualGroupScreen() {
-    console.error(this.state.groupData);
     return (
       <View>
         <Text style={styles.title}> {this.state.currentGroup.groupName} </Text>
         <Text style={[styles.title, {marginTop: 30, marginBottom: 100}]}> Destination: {this.state.currentGroup.destination} </Text>
-        {this.state.currentGroup.groupMembers.map((member) => {
-          return <Text style={{marginLeft: 50, marginBottom: 20, fontSize: 16}}>{member}</Text>
+        {this.state.groupDistanceData.map((member) => {
+          return <Text style={{marginLeft: 20, marginBottom: 20, fontSize: 16}}>Member: {member.username}, {member.miles} away, ETA: {member.time}</Text>
         })}
       </View>
     );
