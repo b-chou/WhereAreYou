@@ -47,6 +47,7 @@ class AwesomeProject extends Component {
   }
 
   logout() {
+    username = 'default';
     this.setState({
       userSignName: '',
       userSignPass: '',
@@ -133,20 +134,26 @@ class AwesomeProject extends Component {
     fetch(baseLink + originLat + ',' + originLong + '&destinations=' + endpoint + '&key=' + GOOGLEMAP_API_KEY)
       .then((response) => response.json())
       .then((responseData) => {
-        var obj = {
-          miles: responseData.rows[0].elements[0].distance.text,
-          time: responseData.rows[0].elements[0].duration.text,
-          username: username
-        };
-        var temp = this.state.groupDistanceData;
-        temp.push(obj);
+        fetch('https://maps.googleapis.com/maps/api/geocode/json?latlng=' + originLat + ',' + originLong + '&key=' + GOOGLEMAP_API_KEY)
+        .then((response) => {
+            var obj = {
+            miles: responseData.rows[0].elements[0].distance.text,
+            time: responseData.rows[0].elements[0].duration.text,
+            username: username,
+            origin: responseData.origin_addresses
+          };
+           var temp = this.state.groupDistanceData;
+            temp.push(obj);
 
-        this.setState({
-          groupDistanceData: temp
+            this.setState({
+              groupDistanceData: temp
+            });
         });
+ 
       })
       .done();
   }
+
 
   reverseGeoCoding() {
     fetch('https://maps.googleapis.com/maps/api/geocode/json?latlng=' + userGPS.latitude + ',' + userGPS.longitude + '&key=' + GOOGLEMAP_API_KEY)
@@ -375,6 +382,7 @@ class AwesomeProject extends Component {
     }
     return (
       <Image source={{uri: 'http://www.codeproject.com/KB/mobile/439871/BackgroundImage.png'}} style={[styles.backgroundImage]}>
+      
       <View style={styles.title}>
           {groupList.map( (r) => {
             return <TouchableHighlight style={styles.buttonBox} onPress={() => this.joinGroup(r[1])}> 
@@ -463,15 +471,15 @@ class AwesomeProject extends Component {
     return (
       <Image source={{uri: 'http://www.codeproject.com/KB/mobile/439871/BackgroundImage.png'}} style={styles.backgroundImage}>
         <View style={styles.gpsContainer}>
-        <Text style={[styles.gpsInfo, styles.transparent]}> ({userGPS.latitude}, {userGPS.longitude})</Text>
-        <Text style={[styles.gpsInfo, styles.transparent]}> Neighborhood: {userGPS.neighborhood} </Text>
-        <Text style={[styles.gpsInfo, styles.transparent]}> Approx Address: {userGPS.address} </Text>
-        <Text style={[styles.transparent, styles.mainTitle]}>Where are you?</Text>
-        <TextInput ref="username" onChangeText={(name) => username = name} style={[styles.searchInput, styles.Username, {marginTop: 200}]} placeholder='Username'/>
-        <TextInput ref="password" onChangeText={(pass) => password = pass} style={[styles.searchInput, styles.Password]} placeholder='Password'/>
-        <TouchableHighlight onPress={this.signIn.bind(this)}>
-        <Image style={[styles.button]} source={{uri: 'http://static1.squarespace.com/static/520b9d90e4b0db6a8088f152/t/5229f6e1e4b0fdd7a4e49392/1378481894683/Sign+In+Button.png'}}/>
-        </TouchableHighlight>
+          <Text style={[styles.gpsInfo, styles.transparent]}> ({userGPS.latitude}, {userGPS.longitude})</Text>
+          <Text style={[styles.gpsInfo, styles.transparent]}> Neighborhood: {userGPS.neighborhood} </Text>
+          <Text style={[styles.gpsInfo, styles.transparent]}> Approx Address: {userGPS.address} </Text>
+          <Text style={[styles.transparent, styles.mainTitle]}>Where are you?</Text>
+          <TextInput ref="username" onChangeText={(name) => username = name} style={[styles.searchInput, styles.Username, {marginTop: 200}]} placeholder='Username'/>
+          <TextInput ref="password" onChangeText={(pass) => password = pass} style={[styles.searchInput, styles.Password]} placeholder='Password'/>
+          <TouchableHighlight onPress={this.signIn.bind(this)}>
+          <Image style={[styles.button, {width: 150, height: 50, marginLeft: 105}]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Sign+In&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=68&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
+          </TouchableHighlight>
         </View>
       </Image>
     );
@@ -494,11 +502,10 @@ class AwesomeProject extends Component {
         <Text style={[styles.title, styles.transparent, {marginTop: 30, marginBottom: 100}]}> Destination: {this.state.currentGroup.destination} </Text>
         <Text style={[styles.transparent, {marginBottom: 10, marginLeft: 5, fontSize: 16}]}>Members </Text>
         {this.state.groupDistanceData.map((member) => {
-          return <Text style={[{marginLeft: 20, marginBottom: 20, fontSize: 16}, styles.transparent]}>{member.username} | {member.miles} away | ETA: {member.time}</Text>
+          return <Text style={[{marginLeft: 20, marginBottom: 20, fontSize: 12}, styles.transparent]}>{member.username} | {member.miles} away | ETA: {member.time}{'\n'}Currently: {member.origin}</Text>
         })}
-
         <TouchableHighlight onPress={this.logout.bind(this)}> 
-        <Image style={[ styles.button, {marginLeft: 0, marginTop: -30, width: 300}, styles.logout]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Logout&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=68&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
+        <Image style={[ styles.button, {marginLeft: 0, marginTop: -50, width: 300}, styles.logout]} source={{uri: 'http://dabuttonfactory.com/button.png?t=Logout&f=Calibri-Bold&ts=24&tc=fff&tshs=1&tshc=000&hp=68&vp=17&c=8&bgt=gradient&bgc=3d85c6&ebgc=073763&bs=1&bc=569&shs=1&shc=444&sho=s'}}/>
         </TouchableHighlight>
 
       </Image>
@@ -578,10 +585,11 @@ var styles = StyleSheet.create({
   },
   gpsContainer: {
     flex: 1,
-    marginTop: 20,
+    marginTop: 30,
   },
   gpsInfo: {
     flexDirection: 'row',
+    marginBottom: 2,
   },
   rightContainer: {
     flex: 1,
